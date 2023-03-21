@@ -36,33 +36,37 @@ public class WordCount {
          StringTokenizer itr = new StringTokenizer(tem);
          while (itr.hasMoreTokens()) 
          {
-           String curWord = standard(itr.nextToken());     
+           String curWord = standard(itr.nextToken()); 
+           if(isNum(curWord))
+             continue;
             wordCount.put(curWord,wordCount.getOrDefault(curWord,0)+1);
+           System.out.println(curWord);
          }
         for (Map.Entry<String, Integer> set :
              wordCount.entrySet()) {
           String k = set.getKey();
           int v = set.getValue();
           word.set(k);
-          PairWritable one = new PairWritable<Text,IntWritable>(new Text(docId),new IntWritable(v));
+          Text one = new Text(String.format("%s:%s",docId,String.valueOf(v)));
           context.write(word, one);
-           System.out.printf("%s:%s:%d\n",k,docId,v);
         }
       }
    }
    
-   public static class IntSumReducer extends Reducer<Text,PairWritable,Text,MapWritable> 
+   public static class IntSumReducer extends Reducer<Text,Text,Text,Text> 
    {
-      private MapWritable result = new MapWritable();
-      public void reduce(Text key, Iterable<PairWritable<Text,IntWritable>> pairs, Context context) throws IOException, InterruptedException 
+      public void reduce(Text key, Iterable<Text> texts, Context context) throws IOException, InterruptedException 
       {
-         for (PairWritable<Text,IntWritable> pair : pairs) 
+        StringBuilder ans = new StringBuilder("");
+         for (Text text : texts) 
          {
-          result.put(pair.getLeft(),pair.getRight());
-          Text k = pair.getLeft();
-          IntWritable v = pair.getRight();
+           ans.append(" ");
+           ans.append(text.toString());
          }
-         context.write(key, result);
+        // ans.deleteCharAt(ans.length()-1);
+         context.write(key, new Text(ans.toString()));
+         System.out.printf("%s:%s\n",key,ans.toString());
+
       }
    }
 
@@ -78,7 +82,15 @@ public class WordCount {
       r--;
     if(r<l)
       return "";
+    
     return word.substring(l, r+1);
+  }
+  public static boolean isNum(String word){
+    int n = word.length();
+    for(int i=0;i<n;i++)
+      if(word.charAt(i)<'0' || word.charAt(i)>'9')
+        return false;
+    return true;
   }
    
    public static void main(String[] args) throws Exception 
